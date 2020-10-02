@@ -28,9 +28,8 @@ class TooManyRequestsRetryMiddleware(RetryMiddleware):
         elif (response.status == 200 \
                 and response.text == 'Too many requests in a short time'
                 or response.status == 429):
-        # elif response.status == 429:
             self.crawler.engine.pause()
-            time.sleep(1)
+            time.sleep(1.1)
             self.crawler.engine.unpause()
             reason = response_status_message(response.status)
             return self._retry(request, reason, spider) or response
