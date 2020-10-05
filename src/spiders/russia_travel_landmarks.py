@@ -2,7 +2,7 @@ import json
 import scrapy
 
 from pprint import pprint
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 
 class RussiaTravelLandmark(scrapy.Spider):
@@ -27,6 +27,10 @@ class RussiaTravelLandmark(scrapy.Spider):
     pagesize = 100
     pages_count = None
 
+    def __init__(self, group_id):
+        self.group_id = int(group_id)
+        super().__init__()
+
     def get_compilation_url(self, compilation=5):
         url = (
             'https://russia.travel/api/proxy/json/?url=http%3A%2F%2Fapi.russia.'
@@ -37,10 +41,12 @@ class RussiaTravelLandmark(scrapy.Spider):
         return url
 
     def find_groups(self, response):
-        items = json.loads(response.body)['items']
-        group_links = [
-            *map(lambda x: self.get_compilation_url(compilation=x['id']), items)
-        ]
+        # items = json.loads(response.body)['items']
+        # group_links = [
+        #     *map(lambda x: self.get_compilation_url(compilation=x['id']), items)
+        # ]
+        group_links = [self.get_compilation_url(compilation=self.group_id)]
+
         print('\n\ngroup_links:')
         pprint(group_links)
         yield from response.follow_all(group_links, callback=self.parse_groups)
@@ -48,14 +54,20 @@ class RussiaTravelLandmark(scrapy.Spider):
     def parse(self, response):
         yield response.follow(self.groups_url, callback=self.find_groups)
 
+    def get_query_param(self, url, param):
+        return parse_qs(
+                urlparse(unquote(url).split('?url=')[1]).query
+            ) \
+            .get(param, None)
+
     def parse_groups(self, response):
         loads = json.loads(response.body)
-        group_id = parse_qs(urlparse(response.url).query)
+        group_id = self.get_query_param(response.url, 'group')[0]
         object_links = [
             *map(lambda x: self.object_url % x['id'], loads['items'])
         ]
 
-        print('\n\ngroup:\n%s' % response.url)
+        print('\n\ngroup: %s\npage: %s' % (group_id, self.page))
         yield from response.follow_all(
             object_links, callback=self.parse_object
         )

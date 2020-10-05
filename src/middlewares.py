@@ -9,8 +9,7 @@ from scrapy import signals
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.utils.response import response_status_message
 
-# useful for handling different item types with a single interface
-from itemadapter import is_item, ItemAdapter
+from .settings import DOWNLOAD_DELAY
 
 
 class TooManyRequestsRetryMiddleware(RetryMiddleware):
@@ -29,7 +28,7 @@ class TooManyRequestsRetryMiddleware(RetryMiddleware):
                 and response.text == 'Too many requests in a short time'
                 or response.status == 429):
             self.crawler.engine.pause()
-            time.sleep(1.1)
+            time.sleep(DOWNLOAD_DELAY)
             self.crawler.engine.unpause()
             reason = response_status_message(response.status)
             return self._retry(request, reason, spider) or response
