@@ -1,12 +1,9 @@
-# Define your item pipelines here
-#
-# Don't forget to add your pipeline to the ITEM_PIPELINES setting
-# See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-
-
-# useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
+from slugify import slugify
+
+from scrapy import signals
 from scrapy.exceptions import DropItem
+from scrapy.exporters import CsvItemExporter
 
 
 class SrcPipeline:
@@ -14,8 +11,37 @@ class SrcPipeline:
         return item
 
 
-class JsonPipeline:
+class MultipleCsvPipeline:
+    def __init__(self):
+        self.csvfiles = {}
+        self.exporter = {}
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        pipeline = cls()
+        crawler.signals.connect(pipeline.close_spider, signals.spider_closed)
+        return pipeline
+
+    def close_spider(self, spider):
+        for e in self.exporter.values():
+            e.finish_exporting()
+        for f in self.csvfiles.values():
+            f.close()
+
     def process_item(self, item, spider):
+        region = item.get('Регион:')
+        if not region:
+            region = 'other'
+        csv = slugify(region) + '.csv'
+        if csv not in self.csvfiles:
+            newfile = open(
+                'parsed/tourism_classification_hotels/part2/' + csv, 'wb'
+            )
+            self.csvfiles[csv] = newfile
+            self.exporter[csv] = CsvItemExporter(newfile)
+            self.exporter[csv].start_exporting()
+        self.exporter[csv].export_item(item)
+
         return item
 
 

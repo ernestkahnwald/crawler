@@ -68,9 +68,9 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'src.pipelines.SrcPipeline': 100,
-    'src.pipelines.DuplicatesPipeline': 150,
-    'src.pipelines.JsonPipeline': 200,
+    # 'src.pipelines.SrcPipeline': 100,
+    'src.pipelines.MultipleCsvPipeline': 170,
+    # 'src.pipelines.DuplicatesPipeline': 150,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
